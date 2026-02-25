@@ -1,0 +1,160 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Plug Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+    <style>
+        body {
+            background: #f4f7f6;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .card {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-on {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .status-off {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .pzem-val {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand navbar-light bg-white">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">Chart</span>
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="navDropdown" data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                    Menu
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navDropdown">
+                    <li><a class="dropdown-item" href="./dashboard">Dashboard</a></li>
+                    <li><a class="dropdown-item">Chart</a></li>
+                    <li><a class="dropdown-item" href="./chat_ai">AI</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card p-4">
+                    <h5 class="card-title">Power Consumption Chart</h5>
+                    <canvas id="powerChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const SUPABASE_URL = 'https://npjszdvrfqrllpqirmvd.supabase.co'
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wanN6ZHZyZnFybGxwcWlybXZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjAyNTEsImV4cCI6MjA4NzQ5NjI1MX0.TgEerk3G3xoXprmaJgLsnQrkwpUqU77RWdhTrSw749g'
+            const supabaseDB = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+            let voltageData = [];
+            let currentData = [];
+            let powerData = [];
+            let energyData = [];
+            let timeLabels = [];
+
+            async function fetchEnergyLog() {
+                const { data, error } = await supabaseDB
+                    .from('energy_log')
+                    .select('*')
+
+                voltageData = data.map(entry => entry.voltage);
+                currentData = data.map(entry => entry.current);
+                powerData = data.map(entry => entry.power);
+                energyData = data.map(entry => entry.energy);
+                console.log(data);
+
+                if (error) {
+                    console.error(error)
+                    return
+                }
+            }//fetchAll
+            fetchEnergyLog();
+
+            const ctx = document.getElementById('powerChart').getContext('2d');
+            const powerChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                    datasets: [
+                        {
+                            label: 'Power (W)',
+                            data: voltageData,
+                            borderColor: '#0d6efd',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Voltage (V)',
+                            data: currentData,
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Current (A)',
+                            data: powerData,
+                            borderColor: '#ffc107',
+                            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Energy (kWh)',
+                            data: energyData,
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        </script>
+    </div>
+
+</body>
+
+</html>
