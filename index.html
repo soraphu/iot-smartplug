@@ -191,8 +191,10 @@
                         สถานะรีเลย์: <span id="r_status">กำลังโหลด...</span>
                     </div>
                     <div class="d-grid gap-2 d-md-block mb-4 text-center">
-                        <button onclick="toggleState(true)" class="btn btn-success px-4">ON</button>
-                        <button onclick="toggleState(false)" class="btn btn-danger px-4">OFF</button>
+                        <button onclick="toggleState(ACTIVE_LOW ? false : true)"
+                            class="btn btn-success px-4">ON</button>
+                        <button onclick="toggleState(ACTIVE_LOW ? true : false)"
+                            class="btn btn-danger px-4">OFF</button>
                     </div>
                 </div>
             </div>
@@ -234,6 +236,7 @@
             const SUPABASE_URL = 'https://npjszdvrfqrllpqirmvd.supabase.co'
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wanN6ZHZyZnFybGxwcWlybXZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjAyNTEsImV4cCI6MjA4NzQ5NjI1MX0.TgEerk3G3xoXprmaJgLsnQrkwpUqU77RWdhTrSw749g'
             const supabaseDB = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            const ACTIVE_LOW = true;
 
             subscribeToChanges();
             initData();
@@ -244,8 +247,12 @@
                     .select('*')
                     .eq('id', '1');
 
+
                 const newData = data[0];
-                document.getElementById('r_status').innerText = newData.turn_on ? "ON" : "OFF";
+                newData.turn_on = ACTIVE_LOW ? !newData.turn_on : newData.turn_on;
+                relay_status = document.getElementById('r_status');
+                relay_status.style.color = newData.turn_on ? "green" : "red";
+                relay_status.innerText = newData.turn_on ? "ON" : "OFF";
                 document.getElementById('open-time').value = reverseTimeString(newData.turn_on_time);
                 document.getElementById('close-time').value = reverseTimeString(newData.turn_off_time);
                 document.getElementById('timeToggleSystem').checked = newData.timer_enable;
@@ -278,7 +285,10 @@
                             document.getElementById('c').innerText = currentData.current;
                             document.getElementById('p').innerText = currentData.power;
                             document.getElementById('e').innerText = currentData.energy;
-                            document.getElementById('r_status').innerText = currentData.turn_on ? "ON" : "OFF";
+                            currentData.turn_on = ACTIVE_LOW ? !currentData.turn_on : currentData.turn_on;
+                            relay_status = document.getElementById('r_status');
+                            relay_status.style.color = currentData.turn_on ? "green" : "red";
+                            relay_status.innerText = currentData.turn_on ? "ON" : "OFF";
                         }
                     )
                     .subscribe((status) => {
@@ -294,7 +304,6 @@
                     .update({ turn_on: state })
                     .eq('id', '1')
                     .select();
-                document.getElementById('r_status').innerText = data[0].turn_on ? "ON" : "OFF";
                 if (error) {
                     console.error(error)
                     return
