@@ -62,6 +62,11 @@
     <div class="container mt-4">
         <div class="row">
             <div class="col-md-12">
+                <div class="d-flex justify-content-center mb-3">
+                    <button onclick="switchToChart('powerChart')" class="btn btn-outline-primary me-2">Power</button>
+                    <button onclick="switchToChart('currentChart')" class="btn btn-outline-success me-2">Current</button>
+                    <button onclick="switchToChart('energyChart')" class="btn btn-outline-danger">Energy</button>
+                </div>
                 <div class="card p-4">
                     <h5 class="card-title">Power Consumption Chart</h5>
                     <canvas id="powerChart"></canvas>
@@ -74,71 +79,90 @@
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wanN6ZHZyZnFybGxwcWlybXZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjAyNTEsImV4cCI6MjA4NzQ5NjI1MX0.TgEerk3G3xoXprmaJgLsnQrkwpUqU77RWdhTrSw749g'
             const supabaseDB = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            let voltageData = [];
-            let currentData = [];
-            let powerData = [];
-            let energyData = [];
-            let timeLabels = [];
+            let voltageData = [220, 218, 220, 220, 215, 216, 220];
+            let currentData = [0.52, 2.10, 2.05, 1.98, 0.48, 2.15, 2.08];
+            let powerData = [114.4, 462.0, 451.0, 435.6, 105.6, 473.0, 457.6];
+            let energyData = [1.20, 1.28, 1.36, 1.44, 1.46, 1.54, 1.62];
+            let timeLabels = ['12:10', '12:04', '12:08', '12:13', '12:20', '12:25', '12:31'];
+            let showChart = null;
+
+            const dataList = {
+                powerChart: {
+                    label: 'Power (W)',
+                    data: voltageData,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.4)',
+                    tension: 0.4,
+                },
+                currentChart: {
+                    label: 'Current (A)',
+                    data: powerData,
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.4)',
+                    tension: 0.4,
+                },
+                energyChart: {
+                    label: 'Energy (kWh)',
+                    data: energyData,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.4)',
+                    tension: 0.4,
+                }
+            }//displayData
+
+            let setChart = {
+                label: dataList.powerChart.label,
+                data: dataList.powerChart.data,
+                borderColor: dataList.powerChart.borderColor,
+                backgroundColor: dataList.powerChart.backgroundColor,
+                tension: dataList.powerChart.tension,
+                fill: true
+            }
 
             async function fetchEnergyLog() {
                 const { data, error } = await supabaseDB
                     .from('energy_log')
                     .select('*')
 
-                voltageData = data.map(entry => entry.voltage);
-                currentData = data.map(entry => entry.current);
-                powerData = data.map(entry => entry.power);
-                energyData = data.map(entry => entry.energy);
-                timeLabels = data.map(entry => new Date(entry.create_at).toLocaleTimeString('th-TH', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: '2-digit'
-                }));
+                // voltageData = data.map(entry => entry.voltage);
+                // currentData = data.map(entry => entry.current);
+                // powerData = data.map(entry => entry.power);
+                // energyData = data.map(entry => entry.energy);
+                // timeLabels = data.map(entry => new Date(entry.create_at).toLocaleTimeString('th-TH', {
+                //     hour: '2-digit',
+                //     minute: '2-digit',
+                //     day: '2-digit',
+                //     month: '2-digit',
+                //     year: '2-digit'
+                // }));
 
                 if (error) {
                     console.error(error)
                     return
                 }
+
+            }//fetchAll
+
+            function powerChart() {
                 const ctx = document.getElementById('powerChart').getContext('2d');
-                const powerChart = new Chart(ctx, {
+
+                if (showChart !== null) {
+                    showChart.destroy();
+                }
+
+                showChart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: timeLabels,
                         datasets: [
                             {
-                                label: 'Power (W)',
-                                data: voltageData,
-                                borderColor: '#0d6efd',
-                                backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                                tension: 0.4,
-                                fill: true
+                                label: setChart.label,
+                                data: setChart.data,
+                                borderColor: setChart.borderColor,
+                                backgroundColor: setChart.backgroundColor,
+                                tension: setChart.tension,
+                                fill: setChart.fill
                             },
-                            {
-                                label: 'Voltage (V)',
-                                data: currentData,
-                                borderColor: '#28a745',
-                                backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                                tension: 0.4,
-                                fill: true
-                            },
-                            {
-                                label: 'Current (A)',
-                                data: powerData,
-                                borderColor: '#ffc107',
-                                backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                                tension: 0.4,
-                                fill: true
-                            },
-                            {
-                                label: 'Energy (kWh)',
-                                data: energyData,
-                                borderColor: '#dc3545',
-                                backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                                tension: 0.4,
-                                fill: true
-                            }
                         ]
                     },
                     options: {
@@ -168,8 +192,25 @@
                         }
                     }
                 });
-            }//fetchAll
+            }
+
+            function switchToChart(chartType) {
+                setChart = {
+                    label: dataList[chartType].label,
+                    data: dataList[chartType].data,
+                    borderColor: dataList[chartType].borderColor,
+                    backgroundColor: dataList[chartType].backgroundColor,
+                    tension: dataList[chartType].tension,
+                    fill: true
+                }
+                console.log(setChart);
+
+                powerChart();
+            }//switchToChart
+
+            powerChart();
             fetchEnergyLog();
+
         </script>
     </div>
 
