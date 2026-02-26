@@ -133,7 +133,7 @@
                     });
                     await fetchEnergyLog();
 
-                    const prompt = `Here is the energy log data: ${JSON.stringify(energy_log_data)}. The user asks: ${message} + Please answer as thai language and very short maxOutputTokens: 100.`;
+                    const prompt = `Here is the energy log data: ${JSON.stringify(energy_log_data)}. The user asks: ${message} + Please answer as thai language and very short as maxOutputTokens: 50.`;
                     // console.log(prompt);
                     const result = await model.generateContent(prompt);
                     const response = await result.response;
