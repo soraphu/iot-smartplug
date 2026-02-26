@@ -278,6 +278,7 @@
                             document.getElementById('c').innerText = currentData.current;
                             document.getElementById('p').innerText = currentData.power;
                             document.getElementById('e').innerText = currentData.energy;
+                            document.getElementById('r_status').innerText = currentData.turn_on ? "ON" : "OFF";
                         }
                     )
                     .subscribe((status) => {
