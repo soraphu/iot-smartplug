@@ -79,7 +79,7 @@
 
         <script type="module">
             import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
-            const API_KEY = "AIzaSyD5hV1DSmBYWXSiyBFXkHXdjPo2P-tPPrk";
+            const API_KEY = "AIzaSyD1icwMI6Uk3StCQLOT8zb3WEvnOQ9MuU0";
             const genAI = new GoogleGenerativeAI(API_KEY);
 
             const SUPABASE_URL = 'https://npjszdvrfqrllpqirmvd.supabase.co'
@@ -145,7 +145,7 @@
                     if (error.status === 429) {
                         chatBox.lastChild.innerHTML = `<strong>Ai:</strong.text-primary> เกิดข้อผิดพลาด: เกินโควต้าแล้วครับ กรุณาลองใหม่ในภายหลัง หรือวันถัดไป`;
                     } else {
-                        chatBox.lastChild.innerHTML = `<strong>Ai:</strong> เกิดข้อผิดพลาด: ${error.message}`;
+                        chatBox.lastChild.innerHTML = `<strong>Ai:</strong> เกิดข้อผิดพลาด: ${error.status} ${error.statusText}`;
                     }
                 }
             }
