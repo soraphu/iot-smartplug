@@ -61,7 +61,7 @@
             <div class="col-md-8 offset-md-2">
                 <div class="card">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Ask questions</h5>
+                        <h5 class="mb-0">Ask questions 💬</h5>
                     </div>
                     <div class="card-body" style="height: 400px; overflow-y: auto;" id="chatBox">
                         <!-- Messages will appear here -->
@@ -77,7 +77,30 @@
             </div>
         </div>
 
-        <script>
+        <script type="module">
+            import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+            const API_KEY = "AIzaSyD5hV1DSmBYWXSiyBFXkHXdjPo2P-tPPrk";
+            const genAI = new GoogleGenerativeAI(API_KEY);
+
+            const SUPABASE_URL = 'https://npjszdvrfqrllpqirmvd.supabase.co'
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wanN6ZHZyZnFybGxwcWlybXZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjAyNTEsImV4cCI6MjA4NzQ5NjI1MX0.TgEerk3G3xoXprmaJgLsnQrkwpUqU77RWdhTrSw749g'
+            const supabaseDB = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+            let energy_log_data = [];
+
+            async function fetchEnergyLog() {
+                const { data, error } = await supabaseDB
+                    .from('energy_log')
+                    .select(`time:create_at::time, power, voltage, current, energy`) // แก้ตรงนี้
+                    .limit(120);
+                energy_log_data = data;
+
+                if (error) {
+                    console.error(error)
+                    return
+                }
+            }//fetchAll
+
             document.getElementById('sendBtn').addEventListener('click', sendMessage);
             document.getElementById('messageInput').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendMessage();
@@ -89,15 +112,42 @@
                 if (!message) return;
 
                 const chatBox = document.getElementById('chatBox');
-                chatBox.innerHTML += `<div class="mb-2"><strong>You:</strong> ${message}</div>`;
+                chatBox.innerHTML += `<div class="mb-2 text-secondary"><strong>You:</strong> ${message}</div>`;
                 input.value = '';
                 chatBox.scrollTop = chatBox.scrollHeight;
+                askGeminiAndGetAnswer(message);
+            }
 
-                // Simulate AI response
-                setTimeout(() => {
-                    chatBox.innerHTML += `<div class="mb-2"><strong>AI:</strong> This is a demo response.</div>`;
-                    chatBox.scrollTop = chatBox.scrollHeight;
-                }, 500);
+            async function askGeminiAndGetAnswer(message) {
+                const chatBox = document.getElementById('chatBox');
+                chatBox.innerHTML += `<div class="mb-2 text-success"><strong>Ai:</strong> กำลังคิด...</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                try {
+                    const model = genAI.getGenerativeModel({
+                        model: "gemma-3-4b-it", // เลือกโมเดลที่เหมาะสม
+                        generationConfig: {
+                            maxOutputTokens: 100, // จำกัดคำตอบให้สั้น จะได้ไม่โดนตัดคิว
+                            temperature: 0.1,     // ค่าต่ำๆ ช่วยให้คำนวณแม่นยำขึ้น
+                        }
+                    });
+                    await fetchEnergyLog();
+
+                    const prompt = `Here is the energy log data: ${JSON.stringify(energy_log_data)}. The user asks: ${message} + Please answer as thai language and very short maxOutputTokens: 100.`;
+                    // console.log(prompt);
+                    const result = await model.generateContent(prompt);
+                    const response = await result.response;
+                    const aiAnswer = response.text();
+
+                    chatBox.lastChild.innerHTML = `<strong>Ai:</strong> ${aiAnswer}`;
+                } catch (error) {
+                    console.error(error);
+                    if (error.status === 429) {
+                        chatBox.lastChild.innerHTML = `<strong>Ai:</strong.text-primary> เกิดข้อผิดพลาด: เกินโควต้าแล้วครับ กรุณาลองใหม่ในภายหลัง หรือวันถัดไป`;
+                    } else {
+                        chatBox.lastChild.innerHTML = `<strong>Ai:</strong> เกิดข้อผิดพลาด: ${error.message}`;
+                    }
+                }
             }
         </script>
     </div>
