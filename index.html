@@ -206,17 +206,24 @@
                     </label>
                 </div>
 
-                <div id="timeSettings" class="time-inputs disabled">
-                    <div class="time-group">
-                        <label for="open-time">เวลาเปิด:</label>
-                        <input type="time" id="open-time" name="open-time" value="00:00">
+                <div id="timeSettings" class="time-inputs disabled row g-3 align-items-end">
+                    <div class="col-12 col-sm-4">
+                        <div class="time-group">
+                            <label for="open-time" class="form-label">เวลาเปิด:</label>
+                            <input type="time" id="open-time" class="form-control" value="00:00">
+                        </div>
                     </div>
-                    <div class="time-group">
-                        <label for="close-time">เวลาปิด:</label>
-                        <input type="time" id="close-time" name="close-time" value="00:00">
+
+                    <div class="col-12 col-sm-4">
+                        <div class="time-group">
+                            <label for="close-time" class="form-label">เวลาปิด:</label>
+                            <input type="time" id="close-time" class="form-control" value="00:00">
+                        </div>
                     </div>
-                    <button onclick="saveTimerSettings()" class="btn btn-primary"
-                        style="margin:8% 0 0 2%;">บันทึกเวลา</button>
+
+                    <div class="col-12 col-sm-4">
+                        <button onclick="saveTimerSettings()" class="btn btn-primary w-100">บันทึกเวลา</button>
+                    </div>
                 </div>
             </div>
 
@@ -273,15 +280,6 @@
                             document.getElementById('c').innerText = currentData.current;
                             document.getElementById('p').innerText = currentData.power;
                             document.getElementById('e').innerText = currentData.energy;
-                            // document.getElementById('r_status').innerText = currentData.turn_on ? "ON" : "OFF";
-                            // document.getElementById('open-time').value = reverseTimeString(currentData.turn_on_time);
-                            // document.getElementById('close-time').value = reverseTimeString(currentData.turn_off_time);
-                            // document.getElementById('timeToggleSystem').checked = currentData.timer_enable;
-                            // if (currentData.timer_enable) {
-                            //     document.getElementById('timeSettings').classList.remove('disabled');
-                            // } else {
-                            //     document.getElementById('timeSettings').classList.add('disabled');
-                            // }
                         }
                     )
                     .subscribe((status) => {
