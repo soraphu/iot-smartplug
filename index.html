@@ -228,7 +228,33 @@
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wanN6ZHZyZnFybGxwcWlybXZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjAyNTEsImV4cCI6MjA4NzQ5NjI1MX0.TgEerk3G3xoXprmaJgLsnQrkwpUqU77RWdhTrSw749g'
             const supabaseDB = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+
+
             subscribeToChanges();
+            initData();
+
+            async function initData() {
+                const { data, error } = await supabaseDB
+                    .from('control')
+                    .select('*')
+                    .eq('id', '1');
+
+                const newData = data[0];
+                document.getElementById('r_status').innerText = newData.turn_on ? "ON" : "OFF";
+                document.getElementById('open-time').value = reverseTimeString(newData.turn_on_time);
+                document.getElementById('close-time').value = reverseTimeString(newData.turn_off_time);
+                document.getElementById('timeToggleSystem').checked = newData.timer_enable;
+                if (newData.timer_enable) {
+                    document.getElementById('timeSettings').classList.remove('disabled');
+                } else {
+                    document.getElementById('timeSettings').classList.add('disabled');
+                }
+                if (error) {
+                    console.error(error)
+                    return
+                }
+
+            }//fetchAll
 
             function subscribeToChanges() {
                 supabaseDB
@@ -247,15 +273,15 @@
                             document.getElementById('c').innerText = currentData.current;
                             document.getElementById('p').innerText = currentData.power;
                             document.getElementById('e').innerText = currentData.energy;
-                            document.getElementById('r_status').innerText = currentData.turn_on ? "ON" : "OFF";
-                            document.getElementById('open-time').value = reverseTimeString(currentData.turn_on_time);
-                            document.getElementById('close-time').value = reverseTimeString(currentData.turn_off_time);
-                            document.getElementById('timeToggleSystem').checked = currentData.timer_enable;
-                            if (currentData.timer_enable) {
-                                document.getElementById('timeSettings').classList.remove('disabled');
-                            } else {
-                                document.getElementById('timeSettings').classList.add('disabled');
-                            }
+                            // document.getElementById('r_status').innerText = currentData.turn_on ? "ON" : "OFF";
+                            // document.getElementById('open-time').value = reverseTimeString(currentData.turn_on_time);
+                            // document.getElementById('close-time').value = reverseTimeString(currentData.turn_off_time);
+                            // document.getElementById('timeToggleSystem').checked = currentData.timer_enable;
+                            // if (currentData.timer_enable) {
+                            //     document.getElementById('timeSettings').classList.remove('disabled');
+                            // } else {
+                            //     document.getElementById('timeSettings').classList.add('disabled');
+                            // }
                         }
                     )
                     .subscribe((status) => {
