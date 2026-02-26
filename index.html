@@ -201,7 +201,7 @@
                 <div class="status-section">
                     <span><strong>สถานะระบบตั้งเวลา:</strong></span>
                     <label class="switch">
-                        <input type="checkbox" id="toggleSystem" onchange="toggleTimer()">
+                        <input type="checkbox" id="timeToggleSystem" onchange="toggleTimer()">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -209,12 +209,14 @@
                 <div id="timeSettings" class="time-inputs disabled">
                     <div class="time-group">
                         <label for="open-time">เวลาเปิด:</label>
-                        <input type="time" id="open-time" name="open-time" value="08:00">
+                        <input type="time" id="open-time" name="open-time" value="00:00">
                     </div>
                     <div class="time-group">
                         <label for="close-time">เวลาปิด:</label>
-                        <input type="time" id="close-time" name="close-time" value="17:00">
+                        <input type="time" id="close-time" name="close-time" value="00:00">
                     </div>
+                    <button onclick="saveTimerSettings()" class="btn btn-primary"
+                        style="margin:8% 0 0 2%;">บันทึกเวลา</button>
                 </div>
             </div>
 
@@ -227,18 +229,6 @@
             const supabaseDB = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
             subscribeToChanges();
-            async function fetchEnergyLog() {
-                const { data, error } = await supabaseDB
-                    .from('energy_log')
-                    .select('*')
-
-                console.log(data);
-
-                if (error) {
-                    console.error(error)
-                    return
-                }
-            }//fetchAll
 
             function subscribeToChanges() {
                 supabaseDB
@@ -252,12 +242,20 @@
                         },
                         (payload) => {
                             const currentData = payload.new; // ข้อมูลใหม่ที่เพิ่งอัปเดต
-                            // console.log(payload.new);
+                            console.log(payload.new);
                             document.getElementById('v').innerText = currentData.voltage;
                             document.getElementById('c').innerText = currentData.current;
                             document.getElementById('p').innerText = currentData.power;
                             document.getElementById('e').innerText = currentData.energy;
                             document.getElementById('r_status').innerText = currentData.turn_on ? "ON" : "OFF";
+                            document.getElementById('open-time').value = reverseTimeString(currentData.turn_on_time);
+                            document.getElementById('close-time').value = reverseTimeString(currentData.turn_off_time);
+                            document.getElementById('timeToggleSystem').checked = currentData.timer_enable;
+                            if (currentData.timer_enable) {
+                                document.getElementById('timeSettings').classList.remove('disabled');
+                            } else {
+                                document.getElementById('timeSettings').classList.add('disabled');
+                            }
                         }
                     )
                     .subscribe((status) => {
@@ -280,16 +278,75 @@
                 }
             }//fetchAll
 
+            function reverseTimeString(totalMinutes) {
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            }
+
             function toggleTimer() {
-                const isChecked = document.getElementById('toggleSystem').checked;
+                const isChecked = document.getElementById('timeToggleSystem').checked;
                 const timeSettings = document.getElementById('timeSettings');
 
                 if (isChecked) {
                     timeSettings.classList.remove('disabled');
+                    supabaseDB
+                        .from('control')
+                        .update({ timer_enable: true })
+                        .eq('id', '1')
+                        .then(({ data, error }) => {
+                            if (error) {
+                                console.error("Error saving timer settings:", error);
+                            } else {
+                                console.log("Timer enabled.", data);
+                            }
+                        });
                 } else {
                     timeSettings.classList.add('disabled');
+                    supabaseDB
+                        .from('control')
+                        .update({ timer_enable: false })
+                        .eq('id', '1')
+                        .then(({ data, error }) => {
+                            if (error) {
+                                console.error("Error saving timer settings:", error);
+                            } else {
+                                console.log("Timer disabled.", data);
+                            }
+                        });
                 }
             }
+
+            function saveTimerSettings() {
+                const onTime = document.getElementById('open-time').value;
+                const offTime = document.getElementById('close-time').value;
+
+                if (onTime === offTime) {
+                    alert("กรุณาเลือกเวลาเปิดและเวลาปิดให้แตกต่างกัน");
+                    return;
+                }//if: on/off is the same.
+
+                const [hoursOn, minutesOn] = onTime.split(':').map(Number);
+                const totalMinutesOn = (hoursOn * 60) + minutesOn;
+
+                const [hoursOff, minutesOff] = offTime.split(':').map(Number);
+                const totalMinutesOff = (hoursOff * 60) + minutesOff; // จะได้ 1170
+
+                // console.log(totalMinutesOn);
+                // console.log(totalMinutesOff);
+                supabaseDB
+                    .from('control')
+                    .update({ turn_on_time: totalMinutesOn, turn_off_time: totalMinutesOff })
+                    .eq('id', '1')
+                    .then(({ data, error }) => {
+                        if (error) {
+                            console.error("Error saving timer settings:", error);
+                        } else {
+                            console.log("Timer settings saved:", data);
+                            alert(`บันทึกเวลาเรียบร้อย!\nเวลาเปิด: ${onTime} น.\nเวลาปิด: ${offTime} น.`);
+                        }
+                    });
+            }//saveTimerSettings
 
         </script>
     </div>
