@@ -190,7 +190,7 @@
                     <div class="mb-3">
                         สถานะรีเลย์: <span id="r_status">กำลังโหลด...</span>
                     </div>
-                    <div class="d-grid gap-2 d-md-block mb-4 text-center">
+                    <div class="d-grid gap-2 d-md-block mb-4 text-center" id="controlButtons">
                         <button onclick="toggleState(ACTIVE_LOW ? false : true)"
                             class="btn btn-success px-4">ON</button>
                         <button onclick="toggleState(ACTIVE_LOW ? true : false)"
@@ -258,8 +258,10 @@
                 document.getElementById('timeToggleSystem').checked = newData.timer_enable;
                 if (newData.timer_enable) {
                     document.getElementById('timeSettings').classList.remove('disabled');
+                    document.getElementById('controlButtons').classList.add('disabled');
                 } else {
                     document.getElementById('timeSettings').classList.add('disabled');
+                    document.getElementById('controlButtons').classList.remove('disabled');
                 }
                 if (error) {
                     console.error(error)
@@ -322,6 +324,8 @@
 
                 if (isChecked) {
                     timeSettings.classList.remove('disabled');
+                    document.getElementById('controlButtons').classList.add('disabled');
+
                     supabaseDB
                         .from('control')
                         .update({ timer_enable: true })
@@ -335,6 +339,8 @@
                         });
                 } else {
                     timeSettings.classList.add('disabled');
+                    document.getElementById('controlButtons').classList.remove('disabled');
+
                     supabaseDB
                         .from('control')
                         .update({ timer_enable: false })
