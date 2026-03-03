@@ -133,7 +133,12 @@
 
     <nav class="navbar navbar-expand navbar-light bg-white">
         <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1">Dashboard</span>
+            <span class="navbar-brand mb-0 h1">Dashboard
+                <small style="color:grey; display: flex; align-items: center; gap: 10px; font-size: small;">STATUS
+                    <div id="smartplug_status" class="rounded-circle bg-danger" style="height: 10px; width: 10px;">
+                    </div>
+                </small>
+            </span>
             <div class="dropdown">
                 <button class="btn btn-primary dropdown-toggle" type="button" id="navDropdown" data-bs-toggle="dropdown"
                     aria-expanded="false">
@@ -141,8 +146,8 @@
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navDropdown">
                     <li><a class="dropdown-item">Dashboard</a></li>
-                    <li><a class="dropdown-item" href="/chart.html">Chart</a></li>
-                    <li><a class="dropdown-item" href="/chat_ai.html">AI</a></li>
+                    <li><a class="dropdown-item" href="chart.html">Chart</a></li>
+                    <li><a class="dropdown-item" href="chat_ai.html">AI</a></li>
                 </ul>
             </div>
         </div>
@@ -152,7 +157,7 @@
 
         <div class="row justify-content-center">
             <div class="col-md-8 text-center mb-4">
-                <h1 class="display-5 fw-bold text-primary">☕ Smart Plug</h1>
+                <h1 class="display-5 fw-bold text-primary">☕ Smart Plug </h1>
                 <p class="text-muted">ระบบควบคุมปลั๊กไฟอัจฉริยะ</p>
             </div>
 
@@ -185,9 +190,9 @@
                 </div>
             </div>
 
-            <div class="col-md-6 mb-4">
+            <div class="col-md-6 mb-4 disabled" id="state-controller">
                 <div class="card p-4">
-                    <h5 class="mb-3">Control Panel</h5>
+                    <h5 class="mb-3 d-flex">Control Panel</h5>
                     <div class="mb-3">
                         สถานะรีเลย์: <span id="r_status">กำลังโหลด...</span>
                     </div>
@@ -200,7 +205,7 @@
                 </div>
             </div>
 
-            <div class="timer-container justify-content-center">
+            <div class="timer-container justify-content-center disabled" id="timer-controller">
                 <div class="status-section">
                     <span><strong>สถานะระบบตั้งเวลา:</strong></span>
                     <label class="switch">
@@ -229,7 +234,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
 
 
@@ -238,6 +242,9 @@
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wanN6ZHZyZnFybGxwcWlybXZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjAyNTEsImV4cCI6MjA4NzQ5NjI1MX0.TgEerk3G3xoXprmaJgLsnQrkwpUqU77RWdhTrSw749g'
             const supabaseDB = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             const ACTIVE_LOW = true;
+            const TIMEOUT_DURATION = 10000; // 10 วินาที
+            let CONNECTION_TIMEOUT;
+
 
             subscribeToChanges();
             initData();
@@ -247,7 +254,6 @@
                     .from('control')
                     .select('*')
                     .eq('id', '1');
-
 
                 const newData = data[0];
                 newData.turn_on = ACTIVE_LOW ? !newData.turn_on : newData.turn_on;
@@ -268,10 +274,25 @@
                     console.error(error)
                     return
                 }
-
             }//fetchAll
 
             function subscribeToChanges() {
+                const handleDataTimeout = async () => {
+                    console.log("Set zero data timeout.");
+                    const { data, error } = await supabaseDB
+                        .from('control')
+                        .update({ voltage: 0, current: 0, power: 0, energy: 0 })
+                        .eq('id', '1');
+                    document.getElementById('timer-controller').classList.add('disabled');
+                    document.getElementById('state-controller').classList.add('disabled');
+                    document.getElementById('smartplug_status').classList.remove('bg-success');
+                    document.getElementById('smartplug_status').classList.add('bg-danger');
+                    if (error) {
+                        console.error(error)
+                        return
+                    }
+                }
+
                 supabaseDB
                     .channel('realtime-data')
                     .on(
@@ -282,8 +303,15 @@
                             table: 'control'    // ชื่อตารางที่คุณเปิด Enable Realtime ไว้
                         },
                         (payload) => {
+                            clearTimeout(CONNECTION_TIMEOUT);
                             const currentData = payload.new; // ข้อมูลใหม่ที่เพิ่งอัปเดต
-                            console.log(payload.new);
+                            if (currentData.voltage !== 0 || currentData.current !== 0 || currentData.power !== 0 || currentData.energy !== 0) {
+                                CONNECTION_TIMEOUT = setTimeout(handleDataTimeout, TIMEOUT_DURATION);
+                                document.getElementById('timer-controller').classList.remove('disabled');
+                                document.getElementById('state-controller').classList.remove('disabled');
+                                document.getElementById('smartplug_status').classList.remove('bg-danger');
+                                document.getElementById('smartplug_status').classList.add('bg-success');
+                            }
                             document.getElementById('v').innerText = currentData.voltage;
                             document.getElementById('c').innerText = currentData.current;
                             document.getElementById('p').innerText = currentData.power;
@@ -292,6 +320,7 @@
                             relay_status = document.getElementById('r_status');
                             relay_status.style.color = currentData.turn_on ? "green" : "red";
                             relay_status.innerText = currentData.turn_on ? "ON" : "OFF";
+                            // console.log(payload.new);
                         }
                     )
                     .subscribe((status) => {
@@ -305,8 +334,7 @@
                 const { data, error } = await supabaseDB
                     .from('control')
                     .update({ turn_on: state })
-                    .eq('id', '1')
-                    .select();
+                    .eq('id', '1');
                 if (error) {
                     console.error(error)
                     return
