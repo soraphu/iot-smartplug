@@ -61,12 +61,20 @@
             <div class="col-md-8 offset-md-2">
                 <div class="card">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Ask questions 💬</h5>
+                        <h5 class="mb-0">Ai Live Chat 💬</h5>
                     </div>
-                    <div class="card-body" style="height: 400px; overflow-y: auto;" id="chatBox">
-                        <!-- Messages will appear here -->
+                    <div class="card-body" style="height: 400px;">
+                        <div style="height: 50%; display:flex; gap: 10px; font-size: 1.2rem;">
+                            <label style=" height: 100%; width: max-content;"><strong>Asking:</strong></label>
+                            <div id="ask-box" class="text-secondary" style="width: 100%; overflow-y: scroll;"></div>
+                        </div>
+                        <hr>
+                        <div style="height: 40%; display:flex; gap: 10px; font-size: 1.2rem;">
+                            <label style="height: 100%; color: #0d6efd;"><strong>Answer:</strong></label>
+                            <div id="answer-box" style="color: #609fff; width: 100%; overflow-y: scroll;"></div>
+                        </div>
                     </div>
-                    <div class="card-footer">
+                    <div class=" card-footer">
                         <div class="input-group">
                             <input type="text" class="form-control" id="messageInput"
                                 placeholder="Type your message...">
@@ -91,8 +99,8 @@
             async function fetchEnergyLog() {
                 const { data, error } = await supabaseDB
                     .from('energy_log')
-                    .select(`time:create_at::time, power, voltage, current, energy`) // แก้ตรงนี้
-                    .limit(120);
+                    .select(`create_at, power, current, energy`)
+                    .limit(200);
                 energy_log_data = data;
 
                 if (error) {
@@ -111,18 +119,16 @@
                 const message = input.value.trim();
                 if (!message) return;
 
-                const chatBox = document.getElementById('chatBox');
-                chatBox.innerHTML += `<div class="mb-2 text-secondary"><strong>You:</strong> ${message}</div>`;
+                const askBox = document.getElementById('ask-box');
+                askBox.innerHTML = `<div><strong>${message}</strong></div>`;
                 input.value = '';
-                chatBox.scrollTop = chatBox.scrollHeight;
+                askBox.scrollTop = askBox.scrollHeight;
                 askGeminiAndGetAnswer(message);
             }
 
             async function askGeminiAndGetAnswer(message) {
-                const chatBox = document.getElementById('chatBox');
-                chatBox.innerHTML += `<div class="mb-2 text-success"><strong>Ai:</strong> กำลังคิด...</div>`;
-                chatBox.scrollTop = chatBox.scrollHeight;
-
+                const answerBox = document.getElementById('answer-box');
+                answerBox.innerHTML = `<div><strong>กำลังคิด...</strong></div>`;
                 try {
                     const model = genAI.getGenerativeModel({
                         model: "gemma-3-4b-it", // เลือกโมเดลที่เหมาะสม
@@ -133,19 +139,20 @@
                     });
                     await fetchEnergyLog();
 
-                    const prompt = `Here is the energy log data: ${JSON.stringify(energy_log_data)}. The user asks: ${message}, prompt: Answer in thai and very short as maxOutputTokens: 50.`;
+                    const prompt = `Here is the energy log data: ${JSON.stringify(energy_log_data)}. The user asks: ${message}, prompt: Answer very short in thai and ignore energy log data if user didn't ask for it.`;
                     // console.log(prompt);
                     const result = await model.generateContent(prompt);
                     const response = await result.response;
                     const aiAnswer = response.text();
 
-                    chatBox.lastChild.innerHTML = `<strong>Ai:</strong> ${aiAnswer}`;
+                    answerBox.innerHTML = `<div><strong>${aiAnswer}</strong></div>`;
+                    answerBox.scrollTop = answerBox.scrollHeight;
                 } catch (error) {
                     console.error(error);
                     if (error.status === 429) {
-                        chatBox.lastChild.innerHTML = `<strong>Ai:</strong.text-primary> เกิดข้อผิดพลาด: เกินโควต้าแล้วครับ กรุณาลองใหม่ในภายหลัง หรือวันถัดไป`;
+                        answerBox.innerHTML = `<div class="text-danger"><strong>เกิดข้อผิดพลาด เกินโควต้าแล้วครับ กรุณาลองใหม่ในภายหลัง หรือวันถัดไป</strong></div>`;
                     } else {
-                        chatBox.lastChild.innerHTML = `<strong>Ai:</strong> เกิดข้อผิดพลาด: ${error.status} ${error.statusText}`;
+                        answerBox.innerHTML = `<div class="text-danger"><strong>เกิดข้อผิดพลาด ${error.status} ${error.statusText}</strong></div>`;
                     }
                 }
             }
