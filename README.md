@@ -36,7 +36,6 @@
 
   * `measurements`: เก็บค่า V, I, P, E พร้อม Timestamp
   * `device_status`: เก็บสถานะ Relay (ON/OFF) และการตั้งเวลา (Schedule)
-  * `chat_history`: (ถ้ามี) เก็บประวัติการคุยกับ AI
 
 -----
 
@@ -52,7 +51,6 @@
 2.  **ESP32 Setup:**
 
       * เปิดโฟลเดอร์ Firmware ใน Arduino IDE
-      * ติดตั้ง Library ที่จำเป็น (เช่น `Supabase-Arduino`, `PZEM004T`)
       * แก้ไฟล์ Config ใส่ `WiFi SSID`, `Password` และ `Supabase URL/Key`
       * Flash โปรแกรมลง ESP32
 
