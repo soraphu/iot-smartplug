@@ -9,6 +9,8 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <script src="connection.js"></script>
+
     <style>
         body {
             background: #f4f7f6;
@@ -236,34 +238,27 @@
             </div>
         </div>
 
-
         <script>
-            const SUPABASE_URL = 'https://npjszdvrfqrllpqirmvd.supabase.co'
-            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wanN6ZHZyZnFybGxwcWlybXZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjAyNTEsImV4cCI6MjA4NzQ5NjI1MX0.TgEerk3G3xoXprmaJgLsnQrkwpUqU77RWdhTrSw749g'
-            const supabaseDB = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             const ACTIVE_LOW = true;
             const TIMEOUT_DURATION = 10000; // 10 วินาที
             let CONNECTION_TIMEOUT;
 
-
-            subscribeToChanges();
-            initData();
-
-            async function initData() {
+            async function initState() {
                 const { data, error } = await supabaseDB
                     .from('control')
                     .select('*')
                     .eq('id', '1');
+                const getData = data[0];
 
-                const newData = data[0];
-                newData.turn_on = ACTIVE_LOW ? !newData.turn_on : newData.turn_on;
+                getData.turn_on = ACTIVE_LOW ? !getData.turn_on : getData.turn_on;
                 relay_status = document.getElementById('r_status');
-                relay_status.style.color = newData.turn_on ? "green" : "red";
-                relay_status.innerText = newData.turn_on ? "ON" : "OFF";
-                document.getElementById('open-time').value = reverseTimeString(newData.turn_on_time);
-                document.getElementById('close-time').value = reverseTimeString(newData.turn_off_time);
-                document.getElementById('timeToggleSystem').checked = newData.timer_enable;
-                if (newData.timer_enable) {
+                relay_status.style.color = getData.turn_on ? "green" : "red";
+                relay_status.innerText = getData.turn_on ? "ON" : "OFF";
+                document.getElementById('open-time').value = convertTimeString(getData.turn_on_time);
+                document.getElementById('close-time').value = convertTimeString(getData.turn_off_time);
+                document.getElementById('timeToggleSystem').checked = getData.timer_enable;
+
+                if (getData.timer_enable) {
                     document.getElementById('timeSettings').classList.remove('disabled');
                     document.getElementById('controlButtons').classList.add('disabled');
                 } else {
@@ -283,6 +278,7 @@
                         .from('control')
                         .update({ voltage: 0, current: 0, power: 0, energy: 0 })
                         .eq('id', '1');
+
                     document.getElementById('timer-controller').classList.add('disabled');
                     document.getElementById('state-controller').classList.add('disabled');
                     document.getElementById('smartplug_status').classList.remove('bg-success');
@@ -291,16 +287,16 @@
                         console.error(error)
                         return
                     }
-                }
+                }//handle show offline.
 
                 supabaseDB
                     .channel('realtime-data')
                     .on(
                         'postgres_changes',
                         {
-                            event: 'UPDATE',    // ดักฟังการแก้ไขข้อมูล (PATCH จาก ESP32)
+                            event: 'UPDATE', // ดักฟังการแก้ไขข้อมูล (PATCH จาก ESP32)
                             schema: 'public',
-                            table: 'control'    // ชื่อตารางที่คุณเปิด Enable Realtime ไว้
+                            table: 'control' // ชื่อตารางที่คุณเปิด Enable Realtime ไว้
                         },
                         (payload) => {
                             clearTimeout(CONNECTION_TIMEOUT);
@@ -328,7 +324,7 @@
                             console.log("Subscribed control database");
                         }
                     });
-            }
+            }//function: Handle connect database realtime socket.
 
             async function toggleState(state) {
                 const { data, error } = await supabaseDB
@@ -339,13 +335,13 @@
                     console.error(error)
                     return
                 }
-            }//fetchAll
+            }//function: Save relay state.
 
-            function reverseTimeString(totalMinutes) {
+            function convertTimeString(totalMinutes) {
                 const hours = Math.floor(totalMinutes / 60);
                 const minutes = totalMinutes % 60;
                 return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-            }
+            }//function: Reverse time to string.
 
             function toggleTimer() {
                 const isChecked = document.getElementById('timeToggleSystem').checked;
@@ -382,7 +378,7 @@
                             }
                         });
                 }
-            }
+            }//function: Control timer panel.
 
             function saveTimerSettings() {
                 const onTime = document.getElementById('open-time').value;
@@ -413,11 +409,13 @@
                             alert(`บันทึกเวลาเรียบร้อย!\nเวลาเปิด: ${onTime} น.\nเวลาปิด: ${offTime} น.`);
                         }
                     });
-            }//saveTimerSettings
+            }//function: On save timer setting.
 
+            //Call funtion.
+            subscribeToChanges();
+            initState();
         </script>
     </div>
-
 </body>
 
 </html>

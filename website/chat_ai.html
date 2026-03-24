@@ -8,6 +8,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="connection.js"></script>
+
     <style>
         body {
             background: #f4f7f6;
@@ -87,35 +89,33 @@
 
         <script type="module">
             import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
-            const API_KEY = "AIzaSyD1icwMI6Uk3StCQLOT8zb3WEvnOQ9MuU0";
-            const genAI = new GoogleGenerativeAI(API_KEY);
 
-            const SUPABASE_URL = 'https://npjszdvrfqrllpqirmvd.supabase.co'
-            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wanN6ZHZyZnFybGxwcWlybXZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjAyNTEsImV4cCI6MjA4NzQ5NjI1MX0.TgEerk3G3xoXprmaJgLsnQrkwpUqU77RWdhTrSw749g'
-            const supabaseDB = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            let _energyLogData = [];
+            const _fetchDataLimit = 200;
+            const _submitButton = document.getElementById('sendBtn');
+            const _userMessage = document.getElementById('messageInput');
+            const _answerBox = document.getElementById('answer-box');
 
-            let energy_log_data = [];
+            _submitButton.addEventListener('click', sendMessage);
+            _userMessage.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
 
-            async function fetchEnergyLog() {
+            async function fetchEnergyLogLimit() {
                 const { data, error } = await supabaseDB
                     .from('energy_log')
                     .select(`create_at, power, current, energy`)
-                    .limit(200);
-                energy_log_data = data;
+                    .limit(_fetchDataLimit);
+                _energyLogData = data;
 
                 if (error) {
                     console.error(error)
                     return
                 }
-            }//fetchAll
-
-            document.getElementById('sendBtn').addEventListener('click', sendMessage);
-            document.getElementById('messageInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') sendMessage();
-            });
+            }//function: fetch energy log in limit.
 
             function sendMessage() {
-                const input = document.getElementById('messageInput');
+                const input = _userMessage;
                 const message = input.value.trim();
                 if (!message) return;
 
@@ -124,11 +124,11 @@
                 input.value = '';
                 askBox.scrollTop = askBox.scrollHeight;
                 askGeminiAndGetAnswer(message);
-            }
+            }//function: Handle send message to Ai.
 
             async function askGeminiAndGetAnswer(message) {
-                const answerBox = document.getElementById('answer-box');
-                answerBox.innerHTML = `<div><strong>กำลังคิด...</strong></div>`;
+                _answerBox.innerHTML = `<div><strong>กำลังคิด...</strong></div>`;
+
                 try {
                     const model = genAI.getGenerativeModel({
                         model: "gemma-3-4b-it", // เลือกโมเดลที่เหมาะสม
@@ -137,25 +137,26 @@
                             temperature: 0.1,     // ค่าต่ำๆ ช่วยให้คำนวณแม่นยำขึ้น
                         }
                     });
-                    await fetchEnergyLog();
+                    await fetchEnergyLogLimit();
 
-                    const prompt = `Here is the energy log data: ${JSON.stringify(energy_log_data)}. The user asks: ${message}, prompt: Answer very short in thai and ignore energy log data if user didn't ask for it.`;
+                    const prompt = `Here is the energy log data: ${JSON.stringify(_energyLogData)}. The user asks: ${message}, prompt: Answer very short in thai and ignore energy log data if user didn't ask for it.`;
                     // console.log(prompt);
                     const result = await model.generateContent(prompt);
                     const response = await result.response;
                     const aiAnswer = response.text();
 
-                    answerBox.innerHTML = `<div><strong>${aiAnswer}</strong></div>`;
-                    answerBox.scrollTop = answerBox.scrollHeight;
+                    _answerBox.innerHTML = `<div><strong>${aiAnswer}</strong></div>`;
+                    _answerBox.scrollTop = _answerBox.scrollHeight;
                 } catch (error) {
                     console.error(error);
                     if (error.status === 429) {
-                        answerBox.innerHTML = `<div class="text-danger"><strong>เกิดข้อผิดพลาด เกินโควต้าแล้วครับ กรุณาลองใหม่ในภายหลัง หรือวันถัดไป</strong></div>`;
+                        _answerBox.innerHTML = `<div class="text-danger"><strong>เกิดข้อผิดพลาด เกินโควต้าแล้วครับ กรุณาลองใหม่ในภายหลัง หรือวันถัดไป</strong></div>`;
                     } else {
-                        answerBox.innerHTML = `<div class="text-danger"><strong>เกิดข้อผิดพลาด ${error.status} ${error.statusText}</strong></div>`;
+                        _answerBox.innerHTML = `<div class="text-danger"><strong>เกิดข้อผิดพลาด ${error.status} ${error.statusText}</strong></div>`;
                     }
                 }
-            }
+            }//function: Ask Ai and log answer.
+
         </script>
     </div>
 </body>

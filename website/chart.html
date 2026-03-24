@@ -9,6 +9,7 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="connection.js"></script>
 
     <style>
         body {
@@ -63,10 +64,12 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="d-flex justify-content-center mb-3">
-                    <button onclick="putChart('powerChartElement')" class="btn btn-outline-primary me-2">Power</button>
-                    <button onclick="putChart('currentChartElement')"
+                    <button onclick="handleGenerateChart('powerChartElement')"
+                        class="btn btn-outline-primary me-2">Power</button>
+                    <button onclick="handleGenerateChart('currentChartElement')"
                         class="btn btn-outline-success me-2">Current</button>
-                    <button onclick="putChart('energyChartElement')" class="btn btn-outline-danger">Energy</button>
+                    <button onclick="handleGenerateChart('energyChartElement')"
+                        class="btn btn-outline-danger">Energy</button>
                 </div>
                 <div class="card p-4">
                     <h5 class="card-title">Power Consumption Chart</h5>
@@ -76,10 +79,6 @@
         </div>
 
         <script>
-            const SUPABASE_URL = 'https://npjszdvrfqrllpqirmvd.supabase.co'
-            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wanN6ZHZyZnFybGxwcWlybXZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MjAyNTEsImV4cCI6MjA4NzQ5NjI1MX0.TgEerk3G3xoXprmaJgLsnQrkwpUqU77RWdhTrSw749g'
-            const supabaseDB = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
             let powerData = [];
             let currentData = [];
             let energyData = [];
@@ -88,7 +87,7 @@
             let chart = null;
             let makeChartList = {}
 
-            async function fetchEnergyLog() {
+            async function handleFetchEnergyLogData() {
                 const { data, error } = await supabaseDB
                     .from('energy_log')
                     .select('*')
@@ -129,7 +128,7 @@
                 }
                 console.log(makeChartList);
 
-                putChart('powerChartElement');
+                handleGenerateChart('powerChartElement');
 
                 if (error) {
                     console.error(error)
@@ -138,7 +137,7 @@
 
             }//fetchAll
 
-            function putChart(dataType) {
+            function handleGenerateChart(dataType) {
                 const ctx = document.getElementById('powerChart').getContext('2d');
 
                 if (chart !== null) {
@@ -189,7 +188,8 @@
                 });
             }
 
-            fetchEnergyLog();
+            //Call function.
+            handleFetchEnergyLogData();
 
         </script>
     </div>
