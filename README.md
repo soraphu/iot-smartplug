@@ -56,10 +56,4 @@
 
 -----
 
-## 👨‍💻 Author
-
-  * **Soraphu** - [GitHub Profile](https://www.google.com/search?q=https://github.com/soraphu)
-
------
-
 **หมายเหตุ:** โปรเจคนี้เป็นส่วนหนึ่งของวิชา IoT ภาคเรียนที่ 2 ปีการศึกษา 2569
